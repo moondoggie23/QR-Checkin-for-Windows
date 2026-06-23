@@ -9,28 +9,32 @@
 <style>
   :root {
     --neon: #2EE60E;
-    --neon-soft: #f4fff0;
-    --neon-border: #c5f5b8;
-    --neon-text: #1a7a08;
-    --neon-label: #2a8a12;
-    --ink: #111;
-    --muted: #999;
-    --line: #f0f0f0;
+    --neon-dim: rgba(46,230,14,0.15);
+    --neon-border: rgba(46,230,14,0.35);
+    --neon-text: #2EE60E;
+    --neon-label: #2EE60E;
+    --bg-0: #0d0d0d;
+    --bg-1: #161616;
+    --bg-2: #1e1e1e;
+    --ink: #f0f0f0;
+    --muted: #666;
+    --line: #2a2a2a;
   }
   * { box-sizing: border-box; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
-    background: #fafafa; margin: 0; padding: 20px;
+    background: var(--bg-0); margin: 0; padding: 20px;
     display: flex; justify-content: center; color: var(--ink);
+    min-height: 100vh;
   }
   .card {
-    background: #fff; width: 100%; max-width: 520px;
+    background: var(--bg-1); width: 100%; max-width: 520px;
     border: 1px solid var(--line); border-radius: 26px;
-    box-shadow: 0 12px 44px rgba(0,0,0,0.08);
-    overflow: hidden; margin-top: 10px;
+    box-shadow: 0 0 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(46,230,14,0.08);
+    overflow: hidden; margin-top: 10px; height: fit-content;
   }
   .hd {
-    background: #fff; padding: 16px 26px;
+    background: var(--bg-1); padding: 16px 26px;
     display: flex; align-items: center; justify-content: space-between;
     border-bottom: 1px solid var(--line);
   }
@@ -43,36 +47,50 @@
   .body { padding: 26px; }
   .eyebrow { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
   .title { font-family: 'Abril Fatface', serif; font-size: 38px; line-height: 1.1; color: var(--ink); }
-  .accent { width: 46px; height: 5px; background: var(--neon); border-radius: 3px; margin: 8px 0 24px; }
+  .accent { width: 46px; height: 5px; background: var(--neon); border-radius: 3px; margin: 8px 0 24px;
+    box-shadow: 0 0 10px rgba(46,230,14,0.5); }
   .sub { font-size: 12px; color: var(--neon-label); letter-spacing: 1px;
     text-transform: uppercase; font-weight: 600; margin-bottom: 12px; }
+
+  /* 担当者入力 */
   .input {
     width: 100%; padding: 16px; font-size: 17px; font-weight: 500;
-    border: 1.5px solid var(--neon-border); border-radius: 16px;
-    background: var(--neon-soft); color: var(--ink);
+    border: 1.5px solid var(--line); border-radius: 16px;
+    background: var(--bg-2); color: var(--ink);
     margin-bottom: 16px; outline: none;
   }
-  .input:focus { border-color: var(--neon); box-shadow: 0 0 0 3px rgba(46,230,14,0.15); }
+  .input:focus { border-color: var(--neon); box-shadow: 0 0 0 3px rgba(46,230,14,0.12); }
+  .input::placeholder { color: var(--muted); }
+
+  /* ボタン */
   .btn-primary {
     width: 100%; padding: 18px; font-size: 17px; font-weight: 700;
     background: var(--neon); color: #0a0a0a;
     border: none; border-radius: 16px; cursor: pointer;
-    box-shadow: 0 6px 18px rgba(46,230,14,0.4);
+    box-shadow: 0 0 20px rgba(46,230,14,0.35);
   }
-  .btn-primary:disabled { background: #eee; color: #bbb; box-shadow: none; cursor: not-allowed; }
-  .btn-primary:not(:disabled):hover { box-shadow: 0 8px 24px rgba(46,230,14,0.55); }
-  #reader { width: 100%; border-radius: 16px; overflow: hidden; margin-bottom: 14px; }
-  .scanning-label { font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 16px; }
+  .btn-primary:disabled { background: var(--bg-2); color: var(--muted); box-shadow: none; cursor: not-allowed; border: 1px solid var(--line); }
+  .btn-primary:not(:disabled):hover { box-shadow: 0 0 28px rgba(46,230,14,0.55); }
+
+  /* スキャナー */
+  #reader { width: 100%; border-radius: 16px; overflow: hidden; margin-bottom: 14px;
+    border: 1px solid var(--line); }
+  .scanning-label { font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 16px; letter-spacing: 1px; }
+
+  /* 担当者バッジ */
   .staff-badge {
     display: none; align-items: center; gap: 8px;
-    background: var(--neon-soft); border: 1.5px solid var(--neon-border);
+    background: var(--neon-dim); border: 1px solid var(--neon-border);
     border-radius: 12px; padding: 10px 14px; margin-bottom: 16px;
     font-size: 14px; font-weight: 600; color: var(--neon-text);
   }
   .change-link { margin-left: auto; font-size: 12px; color: var(--muted); cursor: pointer; text-decoration: underline; }
+
+  /* 読み取り結果 */
   .result-bar { display: none; padding: 14px 16px; border-radius: 14px; font-size: 14px; font-weight: 600; margin-bottom: 10px; }
-  .result-bar.ok { background: var(--neon-soft); color: var(--neon-text); border: 1.5px solid var(--neon-border); }
-  .result-bar.err { background: #ffeaea; color: #c0392b; border: 1.5px solid #f5c5c5; }
+  .result-bar.ok { background: var(--neon-dim); color: var(--neon-text); border: 1px solid var(--neon-border); }
+  .result-bar.err { background: rgba(192,57,43,0.15); color: #e74c3c; border: 1px solid rgba(192,57,43,0.3); }
+
   .hidden { display: none !important; }
 </style>
 </head>
@@ -83,14 +101,16 @@
     <span class="hd-right" id="hdStaff"></span>
   </div>
   <div class="body">
+
     <div id="setup">
       <div class="eyebrow">受付スキャナー</div>
       <div class="title">Check-in</div>
       <div class="accent"></div>
       <div class="sub">担当者名を入力</div>
       <input type="text" id="staffInput" class="input" placeholder="例：山田">
-      <button class="btn-primary" id="btnStart" onclick="startScanner()">カメラを起動する</button>
+      <button class="btn-primary" id="btnStart" onclick="startScanner()" disabled>カメラを起動する</button>
     </div>
+
     <div id="scannerView" class="hidden">
       <div class="staff-badge" id="staffBadge">
         <span class="dot"></span>
@@ -101,8 +121,10 @@
       <div class="scanning-label" id="scanLabel">QRコードをカメラにかざしてください</div>
       <div class="result-bar" id="resultBar"></div>
     </div>
+
   </div>
 </div>
+
 <script>
 let selectedStaff = "";
 let html5QrCode = null;
