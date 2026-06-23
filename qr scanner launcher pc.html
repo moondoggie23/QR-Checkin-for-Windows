@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>受付スキャナー（PC版）</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --neon: #2EE60E;
+    --neon-soft: #f4fff0;
+    --neon-border: #c5f5b8;
+    --neon-text: #1a7a08;
+    --neon-label: #2a8a12;
+    --ink: #111;
+    --muted: #999;
+    --line: #f0f0f0;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    background: #fafafa; margin: 0; padding: 20px;
+    display: flex; justify-content: center; color: var(--ink);
+  }
+  .card {
+    background: #fff; width: 100%; max-width: 520px;
+    border: 1px solid var(--line); border-radius: 26px;
+    box-shadow: 0 12px 44px rgba(0,0,0,0.08);
+    overflow: hidden; margin-top: 10px;
+  }
+  .hd {
+    background: #fff; padding: 16px 26px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--line);
+  }
+  .hd-left { display: flex; align-items: center; gap: 8px;
+    font-size: 12px; letter-spacing: 2px; color: var(--neon-label);
+    font-weight: 700; text-transform: uppercase; }
+  .dot { width: 9px; height: 9px; border-radius: 50%;
+    background: var(--neon); box-shadow: 0 0 8px var(--neon); flex-shrink: 0; }
+  .hd-right { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .body { padding: 26px; }
+  .eyebrow { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .title { font-family: 'Abril Fatface', serif; font-size: 38px; line-height: 1.1; color: var(--ink); }
+  .accent { width: 46px; height: 5px; background: var(--neon); border-radius: 3px; margin: 8px 0 24px; }
+  .sub { font-size: 12px; color: var(--neon-label); letter-spacing: 1px;
+    text-transform: uppercase; font-weight: 600; margin-bottom: 12px; }
+  .input {
+    width: 100%; padding: 16px; font-size: 17px; font-weight: 500;
+    border: 1.5px solid var(--neon-border); border-radius: 16px;
+    background: var(--neon-soft); color: var(--ink);
+    margin-bottom: 16px; outline: none;
+  }
+  .input:focus { border-color: var(--neon); box-shadow: 0 0 0 3px rgba(46,230,14,0.15); }
+  .btn-primary {
+    width: 100%; padding: 18px; font-size: 17px; font-weight: 700;
+    background: var(--neon); color: #0a0a0a;
+    border: none; border-radius: 16px; cursor: pointer;
+    box-shadow: 0 6px 18px rgba(46,230,14,0.4);
+  }
+  .btn-primary:disabled { background: #eee; color: #bbb; box-shadow: none; cursor: not-allowed; }
+  .btn-primary:not(:disabled):hover { box-shadow: 0 8px 24px rgba(46,230,14,0.55); }
+  #reader { width: 100%; border-radius: 16px; overflow: hidden; margin-bottom: 14px; }
+  .scanning-label { font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 16px; }
+  .staff-badge {
+    display: none; align-items: center; gap: 8px;
+    background: var(--neon-soft); border: 1.5px solid var(--neon-border);
+    border-radius: 12px; padding: 10px 14px; margin-bottom: 16px;
+    font-size: 14px; font-weight: 600; color: var(--neon-text);
+  }
+  .change-link { margin-left: auto; font-size: 12px; color: var(--muted); cursor: pointer; text-decoration: underline; }
+  .result-bar { display: none; padding: 14px 16px; border-radius: 14px; font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+  .result-bar.ok { background: var(--neon-soft); color: var(--neon-text); border: 1.5px solid var(--neon-border); }
+  .result-bar.err { background: #ffeaea; color: #c0392b; border: 1.5px solid #f5c5c5; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="hd">
+    <div class="hd-left"><span class="dot"></span>QR Scanner — PC</div>
+    <span class="hd-right" id="hdStaff"></span>
+  </div>
+  <div class="body">
+    <div id="setup">
+      <div class="eyebrow">受付スキャナー</div>
+      <div class="title">Check-in</div>
+      <div class="accent"></div>
+      <div class="sub">担当者名を入力</div>
+      <input type="text" id="staffInput" class="input" placeholder="例：山田">
+      <button class="btn-primary" id="btnStart" onclick="startScanner()">カメラを起動する</button>
+    </div>
+    <div id="scannerView" class="hidden">
+      <div class="staff-badge" id="staffBadge">
+        <span class="dot"></span>
+        <span id="badgeLabel"></span>
+        <span class="change-link" onclick="backToSetup()">担当者を変更</span>
+      </div>
+      <div id="reader"></div>
+      <div class="scanning-label" id="scanLabel">QRコードをカメラにかざしてください</div>
+      <div class="result-bar" id="resultBar"></div>
+    </div>
+  </div>
+</div>
+<script>
+let selectedStaff = "";
+let html5QrCode = null;
+let lastScanned = "";
+let lastScannedTime = 0;
+let resetTimer = null;
+
+document.getElementById('staffInput').addEventListener('input', function() {
+  document.getElementById('btnStart').disabled = this.value.trim() === '';
+});
+document.getElementById('staffInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && this.value.trim()) startScanner();
+});
+document.getElementById('btnStart').disabled = true;
+
+function startScanner() {
+  const val = document.getElementById('staffInput').value.trim();
+  if (!val) return;
+  selectedStaff = val;
+  document.getElementById('setup').classList.add('hidden');
+  document.getElementById('scannerView').classList.remove('hidden');
+  document.getElementById('badgeLabel').textContent = selectedStaff + " さん";
+  document.getElementById('staffBadge').style.display = 'flex';
+  document.getElementById('hdStaff').textContent = selectedStaff;
+
+  html5QrCode = new Html5Qrcode("reader");
+  html5QrCode.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: { width: 260, height: 260 } },
+    onScanSuccess,
+    function() {}
+  ).catch(function(err) {
+    document.getElementById('scanLabel').textContent = 'カメラ起動エラー: ' + err;
+  });
+}
+
+function onScanSuccess(decodedText) {
+  const now = Date.now();
+  if (decodedText === lastScanned && (now - lastScannedTime) < 4000) return;
+  if (!decodedText.startsWith('http')) return;
+  lastScanned = decodedText;
+  lastScannedTime = now;
+  if (resetTimer) clearTimeout(resetTimer);
+
+  let url;
+  try {
+    const u = new URL(decodedText);
+    u.searchParams.set('staff', selectedStaff);
+    url = u.toString();
+  } catch (_) {
+    url = decodedText + "&staff=" + encodeURIComponent(selectedStaff);
+  }
+
+  let idLabel = "";
+  try { idLabel = new URL(decodedText).searchParams.get('id') || ""; } catch (_) {}
+  showResult('ok', '読み取り完了' + (idLabel ? '：' + idLabel : '') + ' → 受付画面を開いています...');
+
+  window.open(url, 'checkin_window', 'width=500,height=700,left=100,top=50,resizable=yes,scrollbars=yes');
+
+  resetTimer = setTimeout(function() { resetResult(); }, 4000);
+}
+
+function showResult(type, msg) {
+  const bar = document.getElementById('resultBar');
+  bar.className = 'result-bar ' + type;
+  bar.textContent = msg;
+  bar.style.display = 'block';
+}
+
+function resetResult() {
+  lastScanned = "";
+  document.getElementById('resultBar').style.display = 'none';
+  document.getElementById('scanLabel').textContent = 'QRコードをカメラにかざしてください';
+}
+
+function backToSetup() {
+  if (html5QrCode) html5QrCode.stop().catch(function() {});
+  html5QrCode = null;
+  clearTimeout(resetTimer);
+  lastScanned = "";
+  selectedStaff = "";
+  document.getElementById('hdStaff').textContent = '';
+  document.getElementById('staffInput').value = '';
+  document.getElementById('btnStart').disabled = true;
+  document.getElementById('staffBadge').style.display = 'none';
+  document.getElementById('resultBar').style.display = 'none';
+  document.getElementById('scanLabel').textContent = 'QRコードをカメラにかざしてください';
+  document.getElementById('scannerView').classList.add('hidden');
+  document.getElementById('setup').classList.remove('hidden');
+}
+</script>
+</body>
+</html>
